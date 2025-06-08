@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kruskal最小生成树演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 设置Inter字体 */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000; /* 黑色背景 */
+            color: #fff; /* 白色文字 */
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: flex-start; /* 垂直顶部对齐，让内容从顶部开始 */
+            min-height: 100vh; /* 确保内容至少占满整个视口高度 */
+            padding: 20px; /* 添加一些内边距 */
+            box-sizing: border-box; /* 边框盒模型 */
+        }
+        .container {
+            max-width: 900px; /* 限制内容最大宽度 */
+            width: 100%;
+            text-align: center; /* 文本居中 */
+        }
+        .graph-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            height: 450px; /* 增加高度以适应新坐标，确保图形完整显示 */
+            position: relative; /* 确保子节点的绝对定位相对此容器 */
+        }
+        .node {
+            width: 40px;
+            height: 40px;
+            background-color: #3b82f6; /* 蓝色节点 */
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #fff;
+            position: absolute; /* 绝对定位节点 */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 10; /* 确保节点在边之上 */
+        }
+        .edge {
+            stroke: #60a5fa; /* 浅蓝色边 */
+            stroke-width: 2;
+            transition: stroke 0.5s ease-in-out, stroke-width 0.5s ease-in-out;
+        }
+        .edge-label {
+            fill: #fff;
+            font-size: 14px;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none; /* 避免文本阻碍点击 */
+        }
+        .mst-edge {
+            stroke: #10b981; /* 绿色MST边 */
+            stroke-width: 4;
+        }
+        .step-item {
+            background-color: #1f2937; /* 深灰色步骤背景 */
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .step-item.current {
+            background-color: #374151; /* 稍亮的深灰色表示当前步骤 */
+            border: 2px solid #3b82f6; /* 蓝色边框 */
+        }
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .control-button {
+            padding: 10px 20px;
+            background-color: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .control-button:hover {
+            background-color: #2563eb;
+        }
+        .control-button:disabled {
+            background-color: #4b5563;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        #sortedEdgesContainer { /* 调整为单行显示 */
+            background-color: #2d3748; /* 稍亮的灰色背景 */
+            margin-bottom: 5px;
+            padding: 8px;
+            border-radius: 6px;
+            white-space: nowrap; /* 防止文本换行 */
+            overflow-x: auto; /* 允许水平滚动 */
+            text-align: left; /* 文本左对齐 */
+        }
+        #sortedEdgesContainer span { /* 增加间距 */
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container p-6 bg-gray-900 rounded-lg shadow-lg">
+        <h1 class="text-3xl font-bold mb-6 text-blue-400">Kruskal最小生成树演示</h1>
+
+        <div class="graph-container relative w-full bg-gray-800 rounded-lg mb-8 overflow-hidden">
+            <svg id="graphSvg" class="w-full h-full"></svg>
+            </div>
+
+        <h2 class="text-2xl font-semibold mb-4 text-purple-400">排序后的边 (按权重升序)</h2>
+        <div id="sortedEdgesContainer" class="text-left max-h-40 overflow-y-auto pr-2 mb-8 rounded-lg bg-gray-800 p-4">
+            </div>
+
+        <h2 class="text-2xl font-semibold mb-4 text-green-400">算法步骤</h2>
+        <div id="stepsContainer" class="text-left max-h-80 overflow-y-auto pr-2">
+            </div>
+
+        <div class="button-group">
+            <button id="prevBtn" class="control-button">上一步</button>
+            <button id="nextBtn" class="control-button">下一步</button>
+            <button id="resetBtn" class="control-button">重置</button>
+        </div>
+    </div>
+
+    <script>
+        // 定义图的节点和边
+        // 根据原图调整节点坐标，并进行整体平移以居中
+        const nodes = {
+            A: { x: 160 + 400, y: 100 },
+            B: { x: 300 + 400, y: 80 },
+            C: { x: 320 + 400, y: 220 },
+            D: { x: 240 + 400, y: 200 },
+            E: { x: 210 + 400, y: 300 }
+        };
+
+        const edges = [
+            { u: 'A', v: 'B', weight: 65 },
+            { u: 'A', v: 'D', weight: 30 },
+            { u: 'B', v: 'D', weight: 30 },
+            { u: 'B', v: 'C', weight: 50 },
+            { u: 'D', v: 'E', weight: 40 },
+            { u: 'C', v: 'E', weight: 70 }
+        ];
+
+        // 获取DOM元素
+        const graphSvg = document.getElementById('graphSvg');
+        const stepsContainer = document.getElementById('stepsContainer');
+        const sortedEdgesContainer = document.getElementById('sortedEdgesContainer'); // 新增
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let currentStep = -1; // -1 表示初始状态，0 表示第一步
+        let kruskalSteps = []; // 存储Kruskal算法的每一步状态
+
+        // Disjoint Set Union (DSU) 数据结构
+        class DSU {
+            constructor(elements) {
+                this.parent = {};
+                this.rank = {};
+                elements.forEach(el => {
+                    this.parent[el] = el;
+                    this.rank[el] = 0;
+                });
+            }
+
+            find(i) {
+                if (this.parent[i] === i) {
+                    return i;
+                }
+                this.parent[i] = this.find(this.parent[i]);
+                return this.parent[i];
+            }
+
+            union(i, j) {
+                const rootI = this.find(i);
+                const rootJ = this.find(j);
+
+                if (rootI !== rootJ) {
+                    if (this.rank[rootI] < this.rank[rootJ]) {
+                        this.parent[rootI] = rootJ;
+                    } else if (this.rank[rootI] > this.rank[rootJ]) {
+                        this.parent[rootJ] = rootI;
+                    } else {
+                        this.parent[rootJ] = rootI;
+                        this.rank[rootI]++;
+                    }
+                    return true; // 成功合并
+                }
+                return false; // 已经在同一个集合中
+            }
+        }
+
+        // 初始化图的绘制
+        function drawGraph(mstEdges = new Set()) {
+            graphSvg.innerHTML = ''; // 清空SVG
+
+            // 移除旧的节点div，因为它们不是SVG的一部分，而是直接添加到graph-container的
+            const existingNodes = graphSvg.parentElement.querySelectorAll('.node');
+            existingNodes.forEach(node => node.remove());
+
+            // 绘制边
+            edges.forEach(edge => {
+                const uPos = nodes[edge.u];
+                const vPos = nodes[edge.v];
+
+                // 绘制线
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', uPos.x);
+                line.setAttribute('y1', uPos.y);
+                line.setAttribute('x2', vPos.x);
+                line.setAttribute('y2', vPos.y);
+                line.classList.add('edge');
+                // 使用字符串模板来检查边，确保顺序不影响判断
+                const edgeKey1 = `${edge.u}-${edge.v}`;
+                const edgeKey2 = `${edge.v}-${edge.u}`;
+                if (mstEdges.has(edgeKey1) || mstEdges.has(edgeKey2)) {
+                    line.classList.add('mst-edge');
+                }
+                graphSvg.appendChild(line);
+
+                // 绘制边的权重标签
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', (uPos.x + vPos.x) / 2);
+                text.setAttribute('y', (uPos.y + vPos.y) / 2 - 10); // 稍微向上偏移
+                text.textContent = edge.weight;
+                text.classList.add('edge-label');
+                graphSvg.appendChild(text);
+            });
+
+            // 绘制节点
+            Object.keys(nodes).forEach(nodeId => {
+                const pos = nodes[nodeId];
+                const nodeDiv = document.createElement('div');
+                nodeDiv.classList.add('node');
+                nodeDiv.textContent = nodeId;
+                nodeDiv.style.left = `${pos.x - 20}px`; // 居中节点
+                nodeDiv.style.top = `${pos.y - 20}px`; // 居中节点
+                graphSvg.parentElement.appendChild(nodeDiv); // 将节点添加到SVG容器的父元素中
+            });
+        }
+
+        // 计算Kruskal算法的每一步
+        function calculateKruskalSteps() {
+            kruskalSteps = [];
+            const sortedEdges = [...edges].sort((a, b) => a.weight - b.weight); // 按权重排序
+            const allNodes = Object.keys(nodes);
+            const dsu = new DSU(allNodes);
+            let mstEdges = new Set();
+            let mstCost = 0;
+
+            // 初始状态
+            kruskalSteps.push({
+                description: '初始状态：所有节点独立，没有边被选中。',
+                mstEdges: new Set(),
+                mstCost: 0
+            });
+
+            sortedEdges.forEach((edge, index) => {
+                const u = edge.u;
+                const v = edge.v;
+                const weight = edge.weight;
+
+                let stepDescription = `考虑边 (${u}, ${v})，权重 ${weight}。`;
+                let currentMstEdges = new Set(mstEdges); // 复制当前MST边集
+                let currentMstCost = mstCost;
+
+                if (dsu.find(u) !== dsu.find(v)) {
+                    dsu.union(u, v);
+                    currentMstEdges.add(`${u}-${v}`); // 添加到MST
+                    currentMstCost += weight;
+                    stepDescription += ` ${u} 和 ${v} 不在同一个连通分量中，将边 (${u}, ${v}) 加入最小生成树。当前最小生成树总权重：${currentMstCost}。`;
+                } else {
+                    stepDescription += ` ${u} 和 ${v} 已在同一个连通分量中，加入边 (${u}, ${v}) 会形成环，跳过此边。`;
+                }
+
+                kruskalSteps.push({
+                    description: stepDescription,
+                    mstEdges: currentMstEdges,
+                    mstCost: currentMstCost
+                });
+
+                // 更新mstEdges和mstCost以便下一轮使用
+                mstEdges = currentMstEdges;
+                mstCost = currentMstCost;
+            });
+
+            // 最终状态
+            kruskalSteps.push({
+                description: `算法完成。最小生成树总权重为：${mstCost}。`,
+                mstEdges: mstEdges,
+                mstCost: mstCost
+            });
+        }
+
+        // 显示排序后的边列表 (单行显示)
+        function displaySortedEdgesList() {
+            sortedEdgesContainer.innerHTML = ''; // 清空内容
+            const sortedEdges = [...edges].sort((a, b) => a.weight - b.weight); // 确保获取排序后的边
+
+            const edgeStrings = sortedEdges.map(edge => `(${edge.u}, ${edge.v}): ${edge.weight}`);
+            const combinedString = edgeStrings.join(' | '); // 用 '|' 分隔
+
+            const spanElement = document.createElement('span');
+            spanElement.textContent = combinedString;
+            sortedEdgesContainer.appendChild(spanElement);
+        }
+
+        // 更新UI显示
+        function updateUI() {
+            // 更新按钮状态
+            prevBtn.disabled = currentStep <= 0;
+            nextBtn.disabled = currentStep >= kruskalSteps.length - 1;
+
+            // 清空步骤容器
+            stepsContainer.innerHTML = '';
+
+            // 绘制图
+            const currentMstEdges = currentStep >= 0 ? kruskalSteps[currentStep].mstEdges : new Set();
+            drawGraph(currentMstEdges);
+
+            // 添加步骤描述
+            kruskalSteps.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.classList.add('step-item', 'rounded-lg', 'p-3', 'mb-2', 'bg-gray-700', 'text-sm');
+                if (index === currentStep) {
+                    stepDiv.classList.add('current');
+                }
+                stepDiv.innerHTML = `<span class="font-bold text-blue-300">步骤 ${index}:</span> ${step.description}`;
+                stepsContainer.appendChild(stepDiv);
+            });
+
+            // 滚动到当前步骤
+            const currentStepElement = stepsContainer.querySelector('.step-item.current');
+            if (currentStepElement) {
+                currentStepElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // 事件监听器
+        nextBtn.addEventListener('click', () => {
+            if (currentStep < kruskalSteps.length - 1) {
+                currentStep++;
+                updateUI();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentStep > 0) {
+                currentStep--;
+                updateUI();
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            currentStep = 0; // 重置到初始状态
+            updateUI();
+        });
+
+        // 页面加载完成时执行
+        window.onload = function() {
+            calculateKruskalSteps();
+            displaySortedEdgesList(); // 在页面加载时显示排序后的边列表
+            currentStep = 0; // 从第一步开始
+            updateUI();
+        };
+    </script>
+</body>
+</html>

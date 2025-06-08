@@ -1,0 +1,47 @@
+<div class="step">
+    <h3>修正后的完整调整过程</h3>
+    <table border="1">
+        <tr>
+            <th>步骤</th>
+            <th>操作</th>
+            <th>矩阵状态</th>
+        </tr>
+        <tr>
+            <td>1. 初始分配</td>
+            <td>B→1, C→2, A→3</td>
+            <td>
+                <table border="1" style="display:inline-block">
+                <tr><td>A</td><td>6</td><td>3</td><td class="selected">0</td><td>0</td></tr>
+                <tr><td>B</td><td class="selected">0</td><td>0</td><td>0</td><td>5</td></tr>
+                <tr><td>C</td><td>1</td><td class="selected">0</td><td>3</td><td>6</td></tr>
+                <tr><td>D</td><td>3</td><td>0</td><td>5</td><td>2</td></tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>2. 标记与划线</td>
+            <td>
+                • 标记D行√ → 任务2列√ → C行√<br>
+                • 画线：A/B行横线，任务2竖线
+            </td>
+            <td>
+                <img src="https://i.imgur.com/9QmWzXk.png" width="150">
+                <p>划线数=3 < 4 → 需要调整</p>
+            </td>
+        </tr>
+        <tr>
+            <td>3. 矩阵调整</td>
+            <td>
+                未划线最小元素=1<br>
+                • 未划线区减1<br>
+                • 交叉点加1
+            </td>
+            <td>
+                <table border="1" style="display:inline-block">
+                <tr><td>C1</td><td>1→0</td></tr>
+                <tr><td>B2</td><td>0→1</td></tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>

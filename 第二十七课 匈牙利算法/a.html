@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>匈牙利算法 可视化教学</title>
+  <style>
+    body {
+      font-family: "Microsoft YaHei", sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+    }
+    .step {
+      margin-bottom: 30px;
+      padding: 20px;
+      background-color: #fff;
+      border-left: 6px solid #1976d2;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    h2 {
+      color: #1976d2;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      width: auto;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      text-align: center;
+    }
+    .mark0 {
+      background-color: #ffeb3b;
+      font-weight: bold;
+    }
+    .line {
+      background-color: #bbdefb;
+    }
+    .comment {
+      background-color: #f1f8e9;
+      padding: 10px;
+      border-left: 4px solid #558b2f;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="step">
+  <h2>步骤 1：行最小值减去</h2>
+  <p>每行减去该行最小值，得到新的矩阵。</p>
+  <table>
+    <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+    <tr><th>员工A</th><td>7</td><td>3</td><td>2</td><td>0</td></tr>
+    <tr><th>员工B</th><td>1</td><td>0</td><td>2</td><td>5</td></tr>
+    <tr><th>员工C</th><td>2</td><td>0</td><td>5</td><td>6</td></tr>
+    <tr><th>员工D</th><td>4</td><td>0</td><td>7</td><td>2</td></tr>
+  </table>
+</div>
+
+<div class="step">
+  <h2>步骤 2：列最小值减去</h2>
+  <p>每列减去该列最小值，得到标准化矩阵。</p>
+  <table>
+    <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+    <tr><th>员工A</th><td>6</td><td>3</td><td>0</td><td>0</td></tr>
+    <tr><th>员工B</th><td>0</td><td>0</td><td>0</td><td>5</td></tr>
+    <tr><th>员工C</th><td>1</td><td>0</td><td>3</td><td>6</td></tr>
+    <tr><th>员工D</th><td>3</td><td>0</td><td>5</td><td>2</td></tr>
+  </table>
+</div>
+
+<div class="step">
+  <h2>步骤 3：标记独立的0</h2>
+  <p>选择矩阵中独立的0（即不同行不同列的0），作为初步任务分配候选。</p>
+  <table>
+    <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+    <tr><th>员工A</th><td>6</td><td>3</td><td class="mark0">0★</td><td>0</td></tr>
+    <tr><th>员工B</th><td class="mark0">0★</td><td>0</td><td>0</td><td>5</td></tr>
+    <tr><th>员工C</th><td>1</td><td>0</td><td>3</td><td>6</td></tr>
+    <tr><th>员工D</th><td>3</td><td class="mark0">0★</td><td>5</td><td>2</td></tr>
+  </table>
+  <div class="comment">
+    <strong>标零规则：</strong><br>
+    - 每行找一个0，若该0所在列没有被其他行选中，则标记为★。<br>
+    - 所有标记的0不能同行或同列。<br>
+    - 此操作作为初始分配尝试，不代表最终解。<br>
+  </div>
+</div>
+
+<div class="step">
+  <h2>步骤 4：检查线的数量并显示覆盖</h2>
+  <p>从步骤3中，找出最少的水平或垂直线覆盖所有0。</p>
+  <table>
+    <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+    <tr><th class="line">员工A</th><td>6</td><td>3</td><td class="mark0 line">0★</td><td class="line">0</td></tr>
+    <tr><th>员工B</th><td class="mark0">0★</td><td class="line">0</td><td class="line">0</td><td>5</td></tr>
+    <tr><th>员工C</th><td>1</td><td class="line">0</td><td>3</td><td>6</td></tr>
+    <tr><th>员工D</th><td>3</td><td class="mark0 line">0★</td><td>5</td><td>2</td></tr>
+  </table>
+  <div class="comment">
+    <strong>划线规则：</strong><br>
+    1. 找出所有未被标记0所在的行。<br>
+    2. 对这些行中所含的0所在列划线。<br>
+    3. 若某列被划线并包含标记0，则对应的标0所在行也加入划线候选集，重复步骤2。<br>
+    4. 最终，<strong>未被打★的0必须被覆盖</strong>。<br><br>
+    此示例中，划3条列线（任务2、任务3、任务4）+ 1条行线（员工A），共计 4 条线，满足条件。
+  </div>
+</div>
+
+<div class="step">
+  <h2>步骤 5：得出可行解</h2>
+  <p>由于线的数量等于矩阵维度（4），说明可以得到最优分配解，直接提取标0位置即为分配方案。</p>
+  <table>
+    <tr><th>员工</th><th>任务</th><th>耗时</th></tr>
+    <tr><td>A</td><td>任务3</td><td>4</td></tr>
+    <tr><td>B</td><td>任务1</td><td>4</td></tr>
+    <tr><td>C</td><td>任务2</td><td>1</td></tr>
+    <tr><td>D</td><td>任务4</td><td>3</td></tr>
+  </table>
+  <div class="comment">
+    <strong>总耗时：</strong> 4 (A→3) + 4 (B→1) + 1 (C→2) + 3 (D→4) = <strong>12 小时</strong><br>
+    无需继续修改矩阵，算法结束。
+  </div>
+</div>
+
+</body>
+</html>

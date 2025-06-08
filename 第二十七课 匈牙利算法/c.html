@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>匈牙利算法求解任务分配问题</title>
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; line-height: 1.6;}
+    h1, h2, h3 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 30px;}
+    p { margin-bottom: 10px; }
+    table { border-collapse: collapse; margin-bottom: 25px; width: 100%; max-width: 700px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background-color: #fff; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+    th { background-color: #eaf2f8; font-weight: bold; color: #2c3e50; }
+    td { background-color: #ffffff; }
+    .matrix-container { display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; }
+    .step { margin-bottom: 40px; border: 1px solid #dcdcdc; padding: 25px; border-radius: 10px; background-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: flex; gap: 30px;}
+    .step-content { flex: 2; }
+    .step-rules { flex: 1; background-color: #e8f5e9; border-left: 5px solid #4CAF50; padding: 20px; border-radius: 8px; font-size: 0.9em; line-height: 1.5; color: #388e3c; }
+    .step-rules h4 { margin-top: 0; color: #1b5e20; }
+    .highlight { background-color: #ffeb3b; font-weight: bold; padding: 2px 5px; border-radius: 3px;}
+    .zero { font-weight: bold; color: #e67e22; } /* Orange for zeros */
+    .covered-line-row { text-decoration: line-through; color: #95a5a6; } /* Grey for covered cells */
+    .covered-line-col { background-color: #f0f0f0; } /* Light grey for column highlighting */
+    .crossed-out { text-decoration: line-through; color: #95a5a6; }
+    .crossed-out-cell { background-color: #fdd; } /* Light red for crossed-out cells */
+    .bold-blue { font-weight: bold; color: #3498db; font-size: 1.1em; } /* For optimal assignment */
+    .final-result { text-align: center; margin-top: 50px; background-color: #ecf0f1; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .final-result h2 { color: #2980b9; }
+    .final-result p { font-size: 1.2em; font-weight: bold; }
+    ul { list-style-type: disc; margin-left: 20px; }
+    li { margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<h1>匈牙利算法求解任务分配问题</h1>
+
+<p>假设一个小型公司有4个员工（A, B, C, D）和4项任务（1, 2, 3, 4）。以下是每个员工完成每项任务的成本（单位：小时）：</p>
+
+<h2>原始成本矩阵：</h2>
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            <th>任务1</th>
+            <th>任务2</th>
+            <th>任务3</th>
+            <th>任务4</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td><b>员工A</b></td><td>9</td><td>5</td><td>4</td><td>2</td></tr>
+        <tr><td><b>员工B</b></td><td>4</td><td>3</td><td>5</td><td>8</td></tr>
+        <tr><td><b>员工C</b></td><td>3</td><td>1</td><td>6</td><td>7</td></tr>
+        <tr><td><b>员工D</b></td><td>6</td><td>2</td><td>9</td><td>4</td></tr>
+    </tbody>
+</table>
+
+<div class="step">
+    <div class="step-content">
+        <h2>步骤1：行归约</h2>
+        <p>找出矩阵中每一行的最小元素，并将该行中的所有元素都减去这个最小元素。</p>
+        <h3>原始矩阵 (标出行最小元素)：</h3>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>9</td><td>5</td><td>4</td><td><span class="highlight">2</span></td></tr>
+                <tr><td><b>员工B</b></td><td>4</td><td><span class="highlight">3</span></td><td>5</td><td>8</td></tr>
+                <tr><td><b>员工C</b></td><td>3</td><td><span class="highlight">1</span></td><td>6</td><td>7</td></tr>
+                <tr><td><b>员工D</b></td><td>6</td><td><span class="highlight">2</span></td><td>9</td><td>4</td></tr>
+            </tbody>
+        </table>
+        <h3>行归约后的矩阵：</h3>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>7</td><td>3</td><td>2</td><td><span class="zero">0</span></td></tr>
+                <tr><td><b>员工B</b></td><td>1</td><td><span class="zero">0</span></td><td>2</td><td>5</td></tr>
+                <tr><td><b>员工C</b></td><td>2</td><td><span class="zero">0</span></td><td>5</td><td>6</td></tr>
+                <tr><td><b>员工D</b></td><td>4</td><td><span class="zero">0</span></td><td>7</td><td>2</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="step-rules">
+        <h4>规则说明：</h4>
+        <ol>
+            <li>**目的：** 在每行中创建至少一个零。</li>
+            <li>**操作：** 针对矩阵的每一行，找到其内部的最小值。</li>
+            <li>**应用：** 将该行中的所有数字都减去这个最小值。</li>
+        </ol>
+        <p><em>示例：员工A行 (9, 5, 4, 2)，最小值为2。所以这一行变为 (9-2, 5-2, 4-2, 2-2) = (7, 3, 2, 0)。</em></p>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-content">
+        <h2>步骤2：列归约</h2>
+        <p>对于步骤1得到的矩阵，找出每一列的最小元素，并将该列中的所有元素都减去这个最小元素。</p>
+        <h3>步骤1结果矩阵 (标出列最小元素)：</h3>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>7</td><td>3</td><td>2</td><td>0</td></tr>
+                <tr><td><b>员工B</b></td><td><span class="highlight">1</span></td><td>0</td><td>2</td><td>5</td></tr>
+                <tr><td><b>员工C</b></td><td>2</td><td>0</td><td>5</td><td>6</td></tr>
+                <tr><td><b>员工D</b></td><td>4</td><td>0</td><td>7</td><td>2</td></tr>
+                <tr><td><b>列最小</b></td><td>1</td><td><span class="highlight">0</span></td><td><span class="highlight">2</span></td><td><span class="highlight">0</span></td></tr>
+            </tbody>
+        </table>
+        <h3>列归约后的矩阵：</h3>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>6</td><td>3</td><td><span class="zero">0</span></td><td><span class="zero">0</span></td></tr>
+                <tr><td><b>员工B</b></td><td><span class="zero">0</span></td><td><span class="zero">0</span></td><td><span class="zero">0</span></td><td>5</td></tr>
+                <tr><td><b>员工C</b></td><td>1</td><td><span class="zero">0</span></td><td>3</td><td>6</td></tr>
+                <tr><td><b>员工D</b></td><td>3</td><td><span class="zero">0</span></td><td>5</td><td>2</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="step-rules">
+        <h4>规则说明：</h4>
+        <ol>
+            <li>**目的：** 在每列中也创建至少一个零。</li>
+            <li>**操作：** 针对当前矩阵的每一列，找到其内部的最小值。</li>
+            <li>**应用：** 将该列中的所有数字都减去这个最小值。</li>
+        </ol>
+        <p><em>示例：任务1列 (7, 1, 2, 4)，最小值为1。所以这一列变为 (7-1, 1-1, 2-1, 4-1) = (6, 0, 1, 3)。</em></p>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-content">
+        <h2>步骤3：尝试覆盖所有的零 (第一次)</h2>
+        <p>用最少数量的水平线或垂直线覆盖所有的零。如果覆盖线的数量等于矩阵的阶数（4），则进入最优分配；否则，调整矩阵。</p>
+        <h3>当前矩阵 (来自步骤2)：</h3>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>6</td><td>3</td><td><span class="zero">0</span></td><td><span class="zero">0</span></td></tr>
+                <tr><td><b>员工B</b></td><td><span class="zero">0</span></td><td><span class="zero">0</span></td><td><span class="zero">0</span></td><td>5</td></tr>
+                <tr><td><b>员工C</b></td><td>1</td><td><span class="zero">0</span></td><td>3</td><td>6</td></tr>
+                <tr><td><b>员工D</b></td><td>3</td><td><span class="zero">0</span></td><td>5</td><td>2</td></tr>
+            </tbody>
+        </table>
+        <h3>覆盖零的可视化：</h3>
+        <p>一种可能的覆盖方式，使用3条线（1列 + 2行）:</p>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th class="covered-line-col">任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr class="covered-line-row"><td><b>员工A</b></td><td><span class="crossed-out">6</span></td><td><span class="crossed-out">3</span></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">0</span></td></tr>
+                <tr class="covered-line-row"><td><b>员工B</b></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">5</span></td></tr>
+                <tr><td><b>员工C</b></td><td>1</td><td><span class="crossed-out">0</span></td><td>3</td><td>6</td></tr>
+                <tr><td><b>员工D</b></td><td>3</td><td><span class="crossed-out">0</span></td><td>5</td><td>2</td></tr>
+            </tbody>
+        </table>
+        <p><b>结果：</b> 覆盖所有零的线数量为 <b>3</b> 条。</p>
+        <p><b>判断：</b> 3 &lt; 4 (矩阵阶数)，所以需要调整矩阵。</p>
+    </div>
+    <div class="step-rules">
+        <h4>规则说明：</h4>
+        <ol>
+            <li>**目的：** 检查当前是否可以进行最优分配。</li>
+            <li>**操作：** 尽可能用最少数量的水平线或垂直线覆盖矩阵中所有的零。</li>
+            <li>**判断：** <ul>
+                    <li>如果覆盖线的数量**等于**矩阵的阶数 (N)，则找到了最优解的候选矩阵，进入步骤6。</li>
+                    <li>如果覆盖线的数量**小于**矩阵的阶数 (N)，则当前矩阵无法直接得到最优解，需要进行调整，进入步骤4。</li>
+                </ul>
+            </li>
+        </ol>
+        <p><em>技巧：通常从包含零最多的行或列开始覆盖。</em></p>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-content">
+        <h2>步骤4：调整矩阵</h2>
+        <p>找到所有未被覆盖的元素中的最小元素，并根据规则调整矩阵。</p>
+        <h3>未被覆盖元素中的最小元素: <span class="highlight">1</span></h3>
+        <p><b>未被覆盖的元素：</b> {1 (C,1), 3 (C,3), 6 (C,4), 3 (D,1), 5 (D,3), 2 (D,4)}</p>
+        <p><b>被两条线覆盖的元素 (交叉点)：</b> (A,2), (B,2)</p>
+        <h3>调整后的矩阵：</h3>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>6</td><td><span class="highlight">4</span></td><td><span class="zero">0</span></td><td><span class="zero">0</span></td></tr>
+                <tr><td><b>员工B</b></td><td><span class="zero">0</span></td><td><span class="highlight">1</span></td><td><span class="zero">0</span></td><td>5</td></tr>
+                <tr><td><b>员工C</b></td><td><span class="zero">0</span></td><td><span class="zero">0</span></td><td>2</td><td>5</td></tr>
+                <tr><td><b>员工D</b></td><td>2</td><td><span class="zero">0</span></td><td>4</td><td>1</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="step-rules">
+        <h4>规则说明：</h4>
+        <ol>
+            <li>**目的：** 重新生成一个矩阵，以便能用更少或相同数量的线覆盖所有的零，并增加找到最优解的机会。</li>
+            <li>**操作：**
+                <ul>
+                    <li>**1. 找到最小未覆盖元素：** 在当前矩阵中，找出所有没有被任何线覆盖的元素中的最小值 (称之为 'k')。</li>
+                    <li>**2. 减去 'k'：** 将所有未被覆盖的元素都减去 'k'。</li>
+                    <li>**3. 加上 'k'：** 将所有被**两条线同时覆盖**的元素 (即交叉点) 都加上 'k'。</li>
+                    <li>**4. 保持不变：** 其他只被一条线覆盖的元素保持不变。</li>
+                </ul>
+            </li>
+        </ol>
+        <p><em>本例中，最小未覆盖元素是 1。</em></p>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-content">
+        <h2>步骤5：重复覆盖所有的零 (第二次)</h2>
+        <p>再次尝试用最少数量的水平线或垂直线覆盖所有的零。如果覆盖线的数量等于矩阵的阶数（4），则可以进行最优分配。</p>
+        <h3>当前矩阵 (来自步骤4)：</h3>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>6</td><td>4</td><td><span class="zero">0</span></td><td><span class="zero">0</span></td></tr>
+                <tr><td><b>员工B</b></td><td><span class="zero">0</span></td><td>1</td><td><span class="zero">0</span></td><td>5</td></tr>
+                <tr><td><b>员工C</b></td><td><span class="zero">0</span></td><td><span class="zero">0</span></td><td>2</td><td>5</td></tr>
+                <tr><td><b>员工D</b></td><td>2</td><td><span class="zero">0</span></td><td>4</td><td>1</td></tr>
+            </tbody>
+        </table>
+        <h3>覆盖零的可视化：</h3>
+        <p>这次可以用4条线覆盖所有的零 (例如：覆盖列1、列2、列3和行A):</p>
+        <table>
+            <thead>
+                <tr><th></th><th class="covered-line-col">任务1</th><th class="covered-line-col">任务2</th><th class="covered-line-col">任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr class="covered-line-row"><td><b>员工A</b></td><td><span class="crossed-out">6</span></td><td><span class="crossed-out">4</span></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">0</span></td></tr>
+                <tr><td><b>员工B</b></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">1</span></td><td><span class="crossed-out">0</span></td><td>5</td></tr>
+                <tr><td><b>员工C</b></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">2</span></td><td>5</td></tr>
+                <tr><td><b>员工D</b></td><td><span class="crossed-out">2</span></td><td><span class="crossed-out">0</span></td><td><span class="crossed-out">4</span></td><td>1</td></tr>
+            </tbody>
+        </table>
+        <p><b>结果：</b> 覆盖所有零的线数量为 <b>4</b> 条。</p>
+        <p><b>判断：</b> 4 = 4 (矩阵阶数)，所以可以进行最优分配。</p>
+    </div>
+    <div class="step-rules">
+        <h4>规则说明：</h4>
+        <ol>
+            <li>**目的：** 再次检查是否能达到完美覆盖。</li>
+            <li>**操作：** 重复步骤3的覆盖零过程。</li>
+            <li>**判断：**
+                <ul>
+                    <li>如果覆盖线的数量等于矩阵阶数，则进入步骤6（最优分配）。</li>
+                    <li>如果仍小于矩阵阶数，则重复步骤4和步骤5，直到满足条件。</li>
+                </ul>
+            </li>
+        </ol>
+        <p><em>当覆盖线的数量等于矩阵阶数时，我们找到了一个“零矩阵”，其中包含至少一个最优分配方案。</em></p>
+    </div>
+</div>
+
+<div class="step">
+    <div class="step-content">
+        <h2>步骤6：寻找最优分配</h2>
+        <p>在最终归约后的矩阵中，选择不共享行或列的零进行分配，以形成完美匹配。然后计算原始成本。</p>
+        <h3>最终零矩阵：</h3>
+        <table>
+            <thead>
+                <tr><th></th><th>任务1</th><th>任务2</th><th>任务3</th><th>任务4</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>6</td><td>4</td><td><span class="zero">0</span></td><td><span class="zero">0</span></td></tr>
+                <tr><td><b>员工B</b></td><td><span class="zero">0</span></td><td>1</td><td><span class="zero">0</span></td><td>5</td></tr>
+                <tr><td><b>员工C</b></td><td><span class="zero">0</span></td><td><span class="zero">0</span></td><td>2</td><td>5</td></tr>
+                <tr><td><b>员工D</b></td><td>2</td><td><span class="zero">0</span></td><td>4</td><td>1</td></tr>
+            </tbody>
+        </table>
+        <h3>分配过程 (优先选择唯一零)：</h3>
+        <ol>
+            <li>**员工D** 在任务2有一个唯一的零。 -> 分配 <b>员工D -> 任务2</b>。 (划掉行D和列2)</li>
+            <li>**员工C** 在任务1有一个唯一的零 (排除已划掉的列)。 -> 分配 <b>员工C -> 任务1</b>。 (划掉行C和列1)</li>
+            <li>**员工B** 在任务3有一个唯一的零 (排除已划掉的列)。 -> 分配 <b>员工B -> 任务3</b>。 (划掉行B和列3)</li>
+            <li>最后只剩下 **员工A** 和 **任务4** 的零。 -> 分配 <b>员工A -> 任务4</b>。</li>
+        </ol>
+
+        <h3>最优分配方案及原始成本：</h3>
+        <table>
+            <thead>
+                <tr><th>员工</th><th>分配任务</th><th>原始成本 (小时)</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><b>员工A</b></td><td>任务4</td><td><span class="bold-blue">2</span></td></tr>
+                <tr><td><b>员工B</b></td><td>任务3</td><td><span class="bold-blue">5</span></td></tr>
+                <tr><td><b>员工C</b></td><td>任务1</td><td><span class="bold-blue">3</span></td></tr>
+                <tr><td><b>员工D</b></td><td>任务2</td><td><span class="bold-blue">2</span></td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="step-rules">
+        <h4>规则说明：</h4>
+        <ol>
+            <li>**目的：** 从“零矩阵”中找到一个最佳匹配，即每行和每列都恰好分配一个零。</li>
+            <li>**操作：**
+                <ul>
+                    <li>优先选择**只包含一个零的行或列**进行分配。</li>
+                    <li>一旦选择一个零，就将该零所在的行和列进行“划掉”标记，表示该员工和任务已被分配。</li>
+                    <li>重复此过程，直到所有员工都被分配任务。</li>
+                </ul>
+            </li>
+            <li>**计算：** 将最终分配的每个任务在**原始成本矩阵**中的对应成本相加，得到总最小成本。</li>
+        </ol>
+        <p><em>匈牙利算法保证了通过零的完美匹配找到的方案是总成本最小的。</em></p>
+    </div>
+</div>
+
+<div class="final-result">
+    <h2>最终总最小成本</h2>
+    <p>通过匈牙利算法，我们找到的最优任务分配方案的总成本为：</p>
+    <p><b>总最小成本 = 2 + 5 + 3 + 2 = <span class="bold-blue">12 小时</span></b></p>
+</div>
+
+</body>
+</html>

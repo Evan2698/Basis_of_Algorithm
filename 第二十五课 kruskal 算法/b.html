@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prim算法可视化</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            background: #000;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+            font-family: Arial;
+        }
+        #container {
+            text-align: center;
+            max-width: 800px;
+        }
+        #graph {
+            background: #111;
+            border: 1px solid #333;
+            margin: 20px auto;
+        }
+        .node {
+            fill: #4CAF50;
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+        .link {
+            stroke: #555;
+            stroke-opacity: 0.7;
+        }
+        .mst-link {
+            stroke: #FF5722;
+            stroke-width: 3px;
+        }
+        .node-label, .weight {
+            fill: #fff;
+            font-size: 12px;
+            pointer-events: none;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h2>Prim算法最小生成树演示</h2>
+        <div>
+            <button id="runBtn">运行算法</button>
+            <button id="resetBtn">重置</button>
+        </div>
+        <svg id="graph" width="600" height="400"></svg>
+        <div id="status">准备就绪</div>
+    </div>
+
+    <script>
+        // 安全初始化检查
+        if(typeof d3 === 'undefined') {
+            document.getElementById('status').textContent = '错误: D3.js加载失败';
+            throw new Error('D3.js未加载');
+        }
+
+        // 稳定的图数据
+        const graph = {
+            nodes: [
+                {id: 0, x: 160, y: 100, name: "A"},
+                {id: 1, x: 300, y: 80, name: "B"},
+                {id: 2, x: 320, y: 220, name: "C"},
+                {id: 3, x: 240, y: 200, name: "D"},
+                {id: 4, x: 210, y: 300, name: "E"}
+            ],
+            links: [
+                {source: 0, target: 1, weight: 65},
+                {source: 0, target: 3, weight: 30},
+                {source: 1, target: 3, weight: 30},
+                {source: 1, target: 2, weight: 50},
+                {source: 1, target: 0, weight: 65},
+                {source: 2, target: 1, weight: 50},
+                {source: 2, target: 4, weight: 70},
+                {source: 3, target: 0, weight: 30},
+                {source: 3, target: 1, weight: 30},
+                {source: 3, target: 4, weight: 40},
+                {source: 4, target: 2, weight: 70},
+                {source: 4, target: 3, weight: 40}
+               
+            ]
+        };
+
+        // 安全DOM操作
+        try {
+            const svg = d3.select("#graph");
+            const statusDiv = document.getElementById('status');
+            
+            // 绘制初始图形
+            function initGraph() {
+                // 清除现有内容
+                svg.selectAll("*").remove();
+                
+                // 绘制边
+                svg.selectAll(".link")
+                    .data(graph.links)
+                    .enter()
+                    .append("line")
+                    .attr("class", "link")
+                    .attr("x1", d => graph.nodes[d.source].x)
+                    .attr("y1", d => graph.nodes[d.source].y)
+                    .attr("x2", d => graph.nodes[d.target].x)
+                    .attr("y2", d => graph.nodes[d.target].y);
+
+                // 绘制边权重
+                svg.selectAll(".weight")
+                    .data(graph.links)
+                    .enter()
+                    .append("text")
+                    .attr("class", "weight")
+                    .attr("x", d => (graph.nodes[d.source].x + graph.nodes[d.target].x)/2)
+                    .attr("y", d => (graph.nodes[d.source].y + graph.nodes[d.target].y)/2)
+                    .text(d => d.weight);
+
+                // 绘制节点
+                svg.selectAll(".node")
+                    .data(graph.nodes)
+                    .enter()
+                    .append("circle")
+                    .attr("class", "node")
+                    .attr("r", 12)
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+
+                // 绘制节点标签
+                svg.selectAll(".node-label")
+                    .data(graph.nodes)
+                    .enter()
+                    .append("text")
+                    .attr("class", "node-label")
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y - 20)
+                    .text(d => d.name);
+            }
+
+            // Prim算法实现（带错误处理）
+            function runPrim() {
+                statusDiv.textContent = "算法运行中...";
+                let mst = [];
+                let visited = new Set([0]);
+                let steps = 0;
+                const maxSteps = graph.nodes.length * 2; // 防止无限循环
+
+                function nextStep() {
+                    if(steps++ > maxSteps) {
+                        statusDiv.textContent = "安全终止: 超过最大步数";
+                        return;
+                    }
+
+                    if(visited.size >= graph.nodes.length) {
+                        statusDiv.textContent = "算法完成!";
+                        return;
+                    }
+
+                    try {
+                        // 查找候选边
+                        let candidates = [];
+                        visited.forEach(u => {
+                            graph.links.forEach(edge => {
+                                const isCandidate = 
+                                    (edge.source === u && !visited.has(edge.target)) || 
+                                    (edge.target === u && !visited.has(edge.source));
+                                if(isCandidate) candidates.push(edge);
+                            });
+                        });
+
+                        if(candidates.length === 0) {
+                            statusDiv.textContent = "无法继续: 无有效候选边";
+                            return;
+                        }
+
+                        // 按权重排序
+                        candidates.sort((a,b) => a.weight - b.weight);
+                        const minEdge = candidates[0];
+                        mst.push(minEdge);
+                        visited.add(minEdge.source);
+                        visited.add(minEdge.target);
+
+                        // 更新可视化
+                        updateVisualization(mst);
+                        
+                        // 继续下一步
+                        setTimeout(nextStep, 1000);
+                    } catch(e) {
+                        statusDiv.textContent = `错误: ${e.message}`;
+                        console.error(e);
+                    }
+                }
+
+                // 启动算法
+                setTimeout(nextStep, 500);
+            }
+
+            function updateVisualization(mst) {
+                svg.selectAll(".mst-link").remove();
+                svg.selectAll(".mst-link")
+                    .data(mst)
+                    .enter()
+                    .append("line")
+                    .attr("class", "mst-link")
+                    .attr("x1", d => graph.nodes[d.source].x)
+                    .attr("y1", d => graph.nodes[d.source].y)
+                    .attr("x2", d => graph.nodes[d.target].x)
+                    .attr("y2", d => graph.nodes[d.target].y);
+            }
+
+            function reset() {
+                svg.selectAll(".mst-link").remove();
+                statusDiv.textContent = "已重置";
+            }
+
+            // 初始化
+            initGraph();
+            
+            // 事件绑定
+            document.getElementById('runBtn').addEventListener('click', runPrim);
+            document.getElementById('resetBtn').addEventListener('click', reset);
+
+        } catch(e) {
+            document.getElementById('status').textContent = `初始化错误: ${e.message}`;
+            console.error(e);
+        }
+    </script>
+</body>
+</html>

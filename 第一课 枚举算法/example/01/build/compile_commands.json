@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/Evan/MyWorks/基础算法入门/example/01/build",
+  "command": "/usr/bin/g++   -g -o CMakeFiles/example01.dir/main.cpp.o -c /home/Evan/MyWorks/基础算法入门/example/01/main.cpp",
+  "file": "/home/Evan/MyWorks/基础算法入门/example/01/main.cpp",
+  "output": "CMakeFiles/example01.dir/main.cpp.o"
+}
+]

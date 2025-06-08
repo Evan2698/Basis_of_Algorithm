@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>归并排序对比可视化</title>
+    <style>
+        body { font-family: Arial; text-align: center; padding: 20px; }
+        .compare-container { 
+            display: flex; 
+            justify-content: space-around; 
+            margin: 20px auto;
+            max-width: 900px;
+        }
+        .array-panel {
+            margin: 0 15px;
+        }
+        .array-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .array-container { 
+            display: flex; 
+            justify-content: center; 
+            margin: 10px 0; 
+            min-height: 60px;
+        }
+        .array-element {
+            width: 40px; 
+            height: 40px;
+            background-color: #4CAF50;
+            margin: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s;
+            border-radius: 4px;
+        }
+        .original .array-element {
+            background-color: #2196F3;
+        }
+        .processing .array-element.highlight {
+            background-color: #FF9800;
+            transform: scale(1.1);
+        }
+        .controls {
+            margin: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            min-width: 80px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status {
+            margin: 15px;
+            font-weight: bold;
+            color: #333;
+        }
+        .step-info {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 15px auto;
+            max-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <h1>归并排序对比可视化</h1>
+    <div class="controls">
+        <button id="startBtn">开始排序</button>
+        <button id="pauseBtn" disabled>暂停</button>
+        <button id="resetBtn">重置</button>
+        <div class="speed-control">
+            <label for="speed">速度:</label>
+            <input type="range" id="speed" min="100" max="2000" value="500" step="100">
+            <span id="speedValue">500ms</span>
+        </div>
+    </div>
+    
+    <div class="compare-container">
+        <div class="array-panel original">
+            <div class="array-title">原始数据</div>
+            <div class="array-container" id="originalArray"></div>
+        </div>
+        <div class="array-panel processing">
+            <div class="array-title">排序过程</div>
+            <div class="array-container" id="processingArray"></div>
+        </div>
+    </div>
+    
+    <div class="step-info" id="stepInfo"></div>
+    <div class="status" id="status">准备就绪</div>
+
+    <script>
+        const originalArray = [8, 3, 5, 1, 4, 7, 2, 6];
+        let processingArray = [...originalArray];
+        let isSorting = false;
+        let isPaused = false;
+        let animationSpeed = 500;
+        let animationQueue = [];
+        let currentAnimation = null;
+        
+        const originalContainer = document.getElementById('originalArray');
+        const processingContainer = document.getElementById('processingArray');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedControl = document.getElementById('speed');
+        const speedValue = document.getElementById('speedValue');
+        const statusText = document.getElementById('status');
+        const stepInfo = document.getElementById('stepInfo');
+        
+        // 初始化显示
+        displayOriginalArray();
+        displayProcessingArray();
+        
+        // 事件监听
+        startBtn.addEventListener('click', startSorting);
+        pauseBtn.addEventListener('click', togglePause);
+        resetBtn.addEventListener('click', resetArrays);
+        speedControl.addEventListener('input', updateSpeed);
+        
+        function updateSpeed() {
+            animationSpeed = parseInt(speedControl.value);
+            speedValue.textContent = animationSpeed + 'ms';
+        }
+        
+        function displayOriginalArray() {
+            originalContainer.innerHTML = '';
+            originalArray.forEach(num => {
+                const element = document.createElement('div');
+                element.className = 'array-element';
+                element.textContent = num;
+                originalContainer.appendChild(element);
+            });
+        }
+        
+        function displayProcessingArray(arr = processingArray, highlights = []) {
+            processingContainer.innerHTML = '';
+            arr.forEach((num, index) => {
+                const element = document.createElement('div');
+                element.className = 'array-element';
+                if (highlights.includes(index)) {
+                    element.classList.add('highlight');
+                }
+                element.textContent = num;
+                processingContainer.appendChild(element);
+            });
+        }
+        
+        function resetArrays() {
+            if (isSorting && currentAnimation) {
+                clearTimeout(currentAnimation);
+                currentAnimation = null;
+            }
+            
+            processingArray = [...originalArray];
+            animationQueue = [];
+            isSorting = false;
+            isPaused = false;
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            pauseBtn.textContent = '暂停';
+            
+            statusText.textContent = '已重置';
+            stepInfo.textContent = '';
+            
+            displayOriginalArray();
+            displayProcessingArray();
+        }
+        
+        function startSorting() {
+            if (isSorting) return;
+            
+            isSorting = true;
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            statusText.textContent = '排序中...';
+            
+            animationQueue = [];
+            processingArray = [...originalArray];
+            displayProcessingArray();
+            
+            mergeSort([...processingArray], 0).then(sortedArray => {
+                processingArray = sortedArray;
+                displayProcessingArray(sortedArray);
+                
+                isSorting = false;
+                startBtn.disabled = false;
+                pauseBtn.disabled = true;
+                statusText.textContent = '排序完成!';
+            });
+        }
+        
+        function togglePause() {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? '继续' : '暂停';
+            statusText.textContent = isPaused ? '已暂停' : '排序中...';
+            
+            if (!isPaused && animationQueue.length > 0) {
+                processAnimationQueue();
+            }
+        }
+        
+        function queueAnimation(action, description = '') {
+            return new Promise(resolve => {
+                animationQueue.push({ action, resolve, description });
+                if (!currentAnimation && !isPaused) {
+                    processAnimationQueue();
+                }
+            });
+        }
+        
+        function processAnimationQueue() {
+            if (animationQueue.length === 0 || isPaused) {
+                currentAnimation = null;
+                return;
+            }
+            
+            const { action, resolve, description } = animationQueue.shift();
+            action();
+            
+            if (description) {
+                stepInfo.textContent = description;
+            }
+            
+            currentAnimation = setTimeout(() => {
+                resolve();
+                processAnimationQueue();
+            }, animationSpeed);
+        }
+        
+        async function mergeSort(arr, level) {
+            if (arr.length <= 1) return arr;
+            
+            const mid = Math.floor(arr.length / 2);
+            const left = arr.slice(0, mid);
+            const right = arr.slice(mid);
+            
+            await queueAnimation(
+                () => displayProcessingArray([...left, ...right]),
+                `分割数组 → 左: [${left.join(', ')}] | 右: [${right.join(', ')}]`
+            );
+            
+            return merge(
+                await mergeSort(left, level + 1),
+                await mergeSort(right, level + 1),
+                level
+            );
+        }
+        
+        async function merge(left, right, level) {
+            let result = [];
+            let leftIndex = 0;
+            let rightIndex = 0;
+            
+            while (leftIndex < left.length && rightIndex < right.length) {
+                const leftVal = left[leftIndex];
+                const rightVal = right[rightIndex];
+                const isLeftSmaller = leftVal < rightVal;
+                const highlightIndex = result.length;
+                
+                if (isLeftSmaller) {
+                    result.push(leftVal);
+                    leftIndex++;
+                } else {
+                    result.push(rightVal);
+                    rightIndex++;
+                }
+                
+                await queueAnimation(
+                    () => displayProcessingArray(
+                        [...result, ...left.slice(leftIndex), ...right.slice(rightIndex)],
+                        [highlightIndex]
+                    ),
+                    `比较 ${leftVal} 和 ${rightVal} → 选择 ${isLeftSmaller ? leftVal : rightVal}`
+                );
+            }
+            
+            const merged = [...result, ...left.slice(leftIndex), ...right.slice(rightIndex)];
+            
+            await queueAnimation(
+                () => displayProcessingArray(merged),
+                `合并完成: [${merged.join(', ')}]`
+            );
+            
+            return merged;
+        }
+    </script>
+</body>
+</html>

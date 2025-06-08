@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SPFA算法可视化</title>
+    <style>
+        body { 
+            background-color: #121212; 
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+        }
+        #graph-container { 
+            width:600px; 
+            height:400px; 
+            border:1px solid #333; 
+            background-color: #1e1e1e;
+            position: relative;
+        }
+        .node { 
+            position:absolute; 
+            width:30px; 
+            height:30px; 
+            background:#2e7d32; 
+            border-radius:50%; 
+            text-align:center; 
+            line-height:30px; 
+            color:#fff; 
+            z-index: 10;
+        }
+        .edge { 
+            position:absolute; 
+            height:2px; 
+            background:#bb86fc; 
+            transform-origin:0 0; 
+            z-index: 5;
+        }
+        .weight { 
+            position:absolute; 
+            color:#ffab40; 
+            font-weight:bold; 
+            z-index: 15;
+        }
+        .queue { 
+            margin-top:20px; 
+            padding:10px; 
+            background:#2d2d2d; 
+            color:#fff;
+        }
+        .current { background: #ff7043 !important; }
+        .visited { background: #1976d2 !important; }
+        .relaxed { background: #d81b60 !important; }
+        button {
+            background: #3700b3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        #distance-table {
+            margin-top: 20px;
+            color: #e0e0e0;
+        }
+        table {
+            border-collapse: collapse;
+            background: #2d2d2d;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 8px;
+        }
+        th {
+            background: #3700b3;
+        }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #2d2d2d;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="color: #bb86fc;">SPFA算法可视化演示</h1>
+    <div id="graph-container"></div>
+    <div class="queue" id="queue-display">队列: []</div>
+    <div id="distance-table"></div>
+    <button id="start-btn">开始演示</button>
+    <button id="step-btn">单步执行</button>
+    <div id="log"></div>
+
+    <script>
+        // 示例图数据（邻接表表示）
+        const graph = {
+            'A': { 'B': 65, 'D': 30 },
+            'B': { 'D': 30, 'C': 50, 'A': 65 },
+            'C': { 'B': 50, 'E': 70 },
+            'D': {'A': 30, 'B': 30, 'E': 40 },
+            'E': { 'C': 70, 'D': 40 }
+        };
+
+        // 初始化可视化元素
+        function initVisualization() {
+            const container = document.getElementById('graph-container');
+            
+            // 节点位置预设
+            const positions = {
+                'A': [160, 100], 'B': [300, 80], 
+                'C': [320, 220], 'D': [240, 200],
+                'E': [210, 300],
+            };
+
+            // 绘制节点
+            for (const node in positions) {
+                const [x, y] = positions[node];
+                const el = document.createElement('div');
+                el.className = 'node';
+                el.id = `node-${node}`;
+                el.textContent = node;
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                container.appendChild(el);
+            }
+
+            // 绘制边和权重
+            for (const u in graph) {
+                for (const v in graph[u]) {
+                    const [x1, y1] = positions[u];
+                    const [x2, y2] = positions[v];
+                    const dx = x2 - x1, dy = y2 - y1;
+                    const length = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // 边
+                    const edge = document.createElement('div');
+                    edge.className = 'edge';
+                    edge.id = `edge-${u}-${v}`;
+                    edge.style.width = `${length}px`;
+                    edge.style.left = `${x1+15}px`;
+                    edge.style.top = `${y1+15}px`;
+                    edge.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+                    container.appendChild(edge);
+                    
+                    // 权重
+                    const weight = document.createElement('div');
+                    weight.className = 'weight';
+                    weight.textContent = graph[u][v];
+                    weight.style.left = `${(x1+x2)/2}px`;
+                    weight.style.top = `${(y1+y2)/2}px`;
+                    container.appendChild(weight);
+                }
+            }
+        }
+
+        // SPFA算法实现
+        function runSPFA() {
+            const dist = {};
+            const inQueue = {};
+            const queue = ['A']; // 起点
+            const prev = {};
+            const log = document.getElementById('log');
+            
+            // 初始化距离
+            for (const node in graph) {
+                dist[node] = node === 'A' ? 0 : Infinity;
+                prev[node] = null;
+            }
+            
+            updateDisplay(queue, dist);
+            
+            function processStep() {
+                if (queue.length === 0) return;
+                
+                const u = queue.shift();
+                inQueue[u] = false;
+                
+                // 高亮当前处理节点
+                highlightNode(u, 'current');
+                log.innerHTML += `<p>处理节点: ${u}</p>`;
+                
+                for (const v in graph[u]) {
+                    const newDist = dist[u] + graph[u][v];
+                    
+                    // 高亮当前边
+                    highlightEdge(u, v, 'relaxed');
+                    
+                    if (newDist < dist[v]) {
+                        dist[v] = newDist;
+                        prev[v] = u;
+                        log.innerHTML += `<p>更新 ${v} 的距离为 ${newDist}</p>`;
+                        
+                        if (!inQueue[v]) {
+                            queue.push(v);
+                            inQueue[v] = true;
+                            highlightNode(v, 'visited');
+                        }
+                    }
+                    
+                    setTimeout(() => {
+                        highlightEdge(u, v, '');
+                        updateDisplay(queue, dist);
+                    }, 1000);
+                }
+                
+                setTimeout(() => {
+                    highlightNode(u, '');
+                    updateDisplay(queue, dist);
+                    processStep();
+                }, 1500);
+            }
+            
+            processStep();
+        }
+        
+        function highlightNode(node, className) {
+            const el = document.getElementById(`node-${node}`);
+            el.className = `node ${className}`;
+        }
+        
+        function highlightEdge(u, v, className) {
+            const el = document.getElementById(`edge-${u}-${v}`);
+            el.className = `edge ${className}`;
+        }
+        
+        function updateDisplay(queue, dist) {
+            document.getElementById('queue-display').textContent = 
+                `队列: [${queue.join(', ')}]`;
+                
+            let table = '<table><tr><th>节点</th><th>距离</th></tr>';
+            for (const node in dist) {
+                table += `<tr><td>${node}</td><td>${dist[node]}</td></tr>`;
+            }
+            table += '</table>';
+            document.getElementById('distance-table').innerHTML = table;
+        }
+        
+        // 初始化
+        initVisualization();
+        document.getElementById('start-btn').addEventListener('click', runSPFA);
+        document.getElementById('step-btn').addEventListener('click', () => {
+            alert('单步模式需在完整代码基础上实现');
+        });
+    </script>
+</body>
+</html>

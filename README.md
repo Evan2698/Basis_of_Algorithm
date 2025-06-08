@@ -1,2 +1,6 @@
-# Basis_of_Algorithm
-Basis of Algorithm
+# 算法基础入门
+这个课件包含计算机数据结构，计算方法中的部分内容，是把一些通用算法融合在一起，主要面向中学生竞赛，0基础入门的同学。
+课件中所有内容均采用C++代码实现
+课件的内容回随时更新。
+
+[传输门通道](https://space.bilibili.com/3546854325226279/lists/5277554?type=season)
